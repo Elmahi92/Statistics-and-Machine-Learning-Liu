@@ -1,0 +1,366 @@
+---
+title: "732A98 Visualization"
+subtitle: "Laboratory Assignment 2"
+author: "Mohamed Ali & Simon Alsén"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: html_document
+---
+  
+  
+```{r setup, include=FALSE}
+library(ggplot2)
+library(plotly)
+library(readxl)
+library(MASS)
+library(plotly)
+library(knitr)
+library(tidyverse)
+library(kableExtra)
+```
+# Assignment 1. Perception in Visualization 
+
+### Assignment 1.1
+##### Scatterplot in Ggplot2 that shows dependence of Palmitic on Oleic in which observations are colored by Linoleic.
+
+```{r scatterplot, echo=FALSE}
+olive <- read.csv("olive.csv")
+
+ggplot(olive, aes(x=palmitic, y=oleic,color=linoleic)) + geom_point(size=1)
+
+```
+
+##### Scatter plot in which you divide Linoleic variable into fours classes
+
+```{r classes, echo=FALSE}
+ggplot(olive, aes(x=palmitic, y=oleic,color= cut_interval(linoleic,n=4))) + geom_point(size=1)
+```
+
+##### How easy/difficult is it to analyze each of these plots?
+
+###### Both graphs are hard to read and interpreted, however the usage of the categories in the second graph made it easy to see differences, yet it’s difficult to find significant ones due to the unseen overlaps in the data points.Also the choice of intervals for the discrete scale is arbitrary. For example, one option is to create 4 equally spaced classes, another option is to create 4 classes that contain the same number of observations in them. The choice of method can in some cases have a big impact on the graph.
+
+##### What kind of perception problem is demonstrated by this experiment?
+###### Preattentive  processing
+
+### Assignment 1.2
+##### Create scatterplots of Palmitic vs Oleic in which you map the discretized Linoleic with four?
+
+###### Color
+```{r Color, echo=FALSE}
+ggplot(olive, aes(x=palmitic, y=oleic,color= cut_interval(linoleic,n=4))) + geom_point(size=1)
+```
+
+###### Size
+```{r Size, echo=FALSE}
+ggplot(olive, aes(x=palmitic, y=oleic,size= cut_interval(linoleic,n=4))) + geom_point()
+```
+
+###### Direction
+```{r Direction, echo=FALSE}
+ggplot(olive, aes(x=palmitic, y=oleic)) + geom_point(size=1)+
+  geom_spoke(aes(angle = linoleic, radius = -100))
+```
+
+##### State in which plots it is more difficult to differentiate between the categories?
+###### Plotting using geom_spoke() make it hard to differentiate between classes
+
+### Assignment 1.3
+##### Create a scatterplot of Oleic vs Eicosenoic in which color is defined by numeric values of Region.
+
+```{r Region, echo=FALSE}
+ggplot(olive, aes(x=oleic, y=eicosenoic,color= Region)) + geom_point(size=1)
+```
+
+##### What is wrong with such a plot?
+###### X and Y scale make the data point hard to see and interpreted
+
+##### Region is a categorical variable
+
+```{r categorical variable, echo=FALSE}
+ggplot(olive, aes(x=oleic, y=eicosenoic,color= cut_interval(Region,n=4))) + geom_point(size=1)
+```
+
+##### How quickly can you identify decision boundaries? 
+###### By using Region as a categorical variable and visualizing the plot color by it, made it ease to identify the decision boundaries easy.
+
+##### Does preattentive or attentive mechanism make it possible? 
+###### preattentive processing
+
+### Assignment 1.4
+##### Color is defined by a discretized Linoleic (3 classes)
+
+```{r discretized Linoleic, echo=FALSE}
+ggplot(olive, aes(x=oleic, y=eicosenoic, color=cut_interval(linoleic,n=3))) + geom_point(aes(shape=cut_interval(palmitic,n=3) ,size=cut_interval(palmitoleic,n=3)))
+```
+
+
+##### How difficult is it to differentiate between 27=3*3*3?
+###### It’s  difficult to differentiate between observation finding it hard due to Shape and color intersection,also it’s not advisable to have a size base on discrete variable
+
+##### Different types of observations? What kind of perception problem is demonstrated by this graph?
+###### Scaling and perspective problem and Abusing dimensionality/wrong mapping
+
+### Assignment 1.5
+##### color is defined by Region, shape is defined by a discretized Palmitic (3 classes) and size is defined by a discretized Palmitoleic (3 classes).
+
+```{r discretized Palmitic , echo=FALSE}
+ggplot(olive, aes(x=oleic, y=eicosenoic, color=Region))+ geom_point(aes(shape=cut_interval(palmitic,n=3) ,size=cut_interval(palmitoleic,n=3)))
+```
+
+
+##### Why is it possible to clearly see a decision boundary between Regions despite many aesthetics are used?
+###### Color Scaling make it possible to see the boundaries between categories.
+
+##### Explain this phenomenon from the perspective of Treisman’s theory.
+###### According to Treisman’s theory, individual maps can be accessed to detect feature activity; focused attention acts through a serial scan of the master map of locations, we can see here that the focuses on the size “Region” the first scan of the features
+
+### Assignment 1.6
+##### Plotly to create a pie chart
+
+```{r Plotly, echo=FALSE}
+fig <- plot_ly(olive, labels = ~Area, type = 'pie',
+               insidetextfont = list(color = '#FFFFFF'),
+               hoverinfo = 'Area',
+               marker = list(colors = colors,
+                             line = list(color = '#FFFFFF', width = 1)),
+               showlegend = FALSE)
+fig <- fig %>% layout(title = 'Proportions of Oils')
+
+fig
+```
+
+##### Which problem is demonstrated by this graph?
+###### Displaing more information in one chart.
+
+### Assignment 1.7
+##### Create a 2d-density contour plot
+```{r 2d-density, echo=FALSE}
+density_2d<-ggplot(olive, aes(x = linoleic, y = eicosenoic)) +
+  geom_point() + 
+  geom_density_2d()
+Scattr_plot<-ggplot(olive, aes(x=linoleic, y=eicosenoic)) + geom_point(size=1)
+density_2d
+Scattr_plot
+```
+
+##### Compare the graph to the scatterplot using the same variables and comment why this contour plot can be misleading.
+###### Scatterplots shows that there is an independency between the two variables, in another words they x variable has no relationship with the y variable, while the contour graph shows data consternation for each variable , which does not indicates or “Mislead” when it comes to interpretation of the graph.
+
+
+## Assignment 2 Multidimensional scaling of a high-dimensional dataset
+
+### Assignment 2.1
+
+The data set used in this assignment consists of 30 observations and 28 variables. Each observation represents a team. Two of the variables are qualitative and 26 of the variables are quantitative.
+
+The numeric variables in the dataset have different scales. A consequence of this is that variables with big scales will get an unproportionally big influence in the MDS. In order for MDS to be reasonable the variables should first be standardized.
+
+```{r echo=FALSE}
+data <- read_xlsx("baseball-2016.xlsx")
+```
+
+### Assignment 2.2
+
+```{r echo=FALSE, set.seed(1)}
+baseball_numeric <- scale(data[,sapply(data, function(x) { is.numeric(x) })])
+d <- dist(x = baseball_numeric,
+          method = "minkowski", p = 2)
+res <- isoMDS(d, k = 2)
+coords <- res$points
+coordsMDS <- as.data.frame(coords)
+coordsMDS$Team <- data$Team
+coordsMDS$League <- data$League
+plot_ly(coordsMDS, x = ~V1, y = ~V2, type = "scatter", mode = "markers", hovertext = ~Team, color = ~League, colors = c("#377eb8", "#ef553b"))
+```
+
+##### The plot suggests that a slight difference between the two leagues exists. The MDS component *V2* appears to be better than *V1* at differentiating between the leagues. All of the teams in AL have a value greater than -1.26 in *V2*, while only 7 teams from NL have a value greater than -1.26 in *V2*. The team *Boston Red Sox* have a value of -8.89 at the x-axis which is noticeably lower than the corresponding values the other teams, especially of those in the same league.
+
+### Assignment 2.3
+
+```{r echo=FALSE}
+sh <- Shepard(d, coords)
+delta <- as.numeric(d)
+D <- as.numeric(dist(coords))
+index <- matrix(1:nrow(coords), nrow = nrow(coords), ncol = nrow(coords))
+index1 <- as.numeric(index[lower.tri(index)])
+index <- matrix(1:nrow(coords), nrow = nrow(coords), ncol = nrow(coords), byrow = TRUE)
+index2 <- as.numeric(index[lower.tri(index)])
+plot_ly()%>%
+  add_markers(x = ~delta, y = ~D, hoverinfo = 'text',
+              text = ~paste('Team 1: ', data$Team[index1],
+                            '<br> Team 2: ', data$Team[index2])) %>%
+  add_lines(x = ~sh$x, y = ~sh$yf)
+```
+
+##### The curve appears to be monotonic which indicates that the multidimensional scaling were successful. The observation pairs that seem to have been the hardest to map are *Minnesota Twins - Arizona Diamondbacks*,  *Oakland Athletics - Milwaukee Brewers*, *NY Mets - Minnesota Twins* and *Minnesota Twins - Colorado Rockies* as these observation pairs are the furthest from the diagonal.
+
+### Assignment 2.4
+
+```{r echo=FALSE}
+data_scatter <- data.frame(coordsMDS$V2, baseball_numeric)
+data$V2 <- coordsMDS$V2
+plot_ly(data, x = ~V2, y = ~HR.per.game, type = "scatter", mode = "markers", hovertext = ~Team, color = ~League, colors = c("#377eb8", "#ef553b"))
+plot_ly(data, x = ~V2, y = ~`3B`, type = "scatter", mode = "markers", hovertext = ~Team, color = ~League, colors = c("#377eb8", "#ef553b"))
+```
+
+##### The MDS variable that appeared to be best in the differentiation between the leagues were *V2*. The numerical variables in the original data set that seems to show the strongest connection with *V2* are *Home runs*/*Home runs per game* and *Triple (3B)*. 
+
+##### Home run means that the batter manages to circle all the bases and reach home in one play. *Home runs*/*Home runs per game* shows a strong, negative relationship with *V2*. A triple occurs when the batter manages to reach the third base in one play. *Triple (3B)* on the other hand shows a strong, positive relationship with *V2*. Both *Home runs*/*Home runs per game* and *Triple (3B)* are therefore closely related to scoring in baseball.
+
+#### A high value in the MDS variable *V2* might indicate that the team has made many triples, but few home runs.
+
+
+## Appendix
+```{r eval=FALSE}
+library(readxl)
+library(MASS)
+library(plotly)
+library(tidyverse)
+###Assigment1####
+################
+olive <- read.csv("olive.csv")
+
+ggplot(olive, aes(x=palmitic, y=oleic,color=linoleic)) + geom_point(size=1)
+
+################
+######2.1#######
+################
+
+ggplot(olive, aes(x=palmitic, y=oleic,color= cut_interval(linoleic,n=4))) + geom_point(size=1)
+
+################
+######2.2.1#####
+################
+
+ggplot(olive, aes(x=palmitic, y=oleic,color= cut_interval(linoleic,n=4))) + geom_point(size=1)
+
+################
+######2.2.2#####
+################
+
+ggplot(olive, aes(x=palmitic, y=oleic,color= cut_interval(linoleic,n=4))) + geom_point(size=2)
+
+################
+######2.2.3#####
+################
+
+ggplot(olive, aes(x=palmitic, y=oleic)) + geom_point(size=1)+
+  geom_spoke(aes(angle = linoleic, radius = -100))
+
+################
+######2.3#######
+################
+
+ggplot(olive, aes(x=oleic, y=eicosenoic,color= Region)) + geom_point(size=1)
+
+################
+######2.3.1#####
+################
+
+ggplot(olive, aes(x=oleic, y=eicosenoic,color= cut_interval(Region,n=4))) + geom_point(size=1)
+
+################
+######2.4#######
+################
+
+ggplot(olive, aes(x=oleic, y=eicosenoic, color=cut_interval(linoleic,n=3))) + geom_point(aes(shape=cut_interval(palmitic,n=3) ,size=cut_interval(palmitoleic,n=3)))
+
+################
+######2.5#######
+################
+
+ggplot(olive, aes(x=oleic, y=eicosenoic, color=Region))+ geom_point(aes(shape=cut_interval(palmitic,n=3) ,size=cut_interval(palmitoleic,n=3)))
+
+################
+######2.6#######
+################
+
+fig <- plot_ly(olive, labels = ~Area, type = 'pie',
+               textposition = 'inside',
+               textinfo = 'label+percent',
+               insidetextfont = list(color = '#FFFFFF'),
+               hoverinfo = 'text',
+               marker = list(colors = colors,
+                             line = list(color = '#FFFFFF', width = 1)),
+               
+               showlegend = FALSE)
+fig <- fig %>% layout(title = 'Proportions of Oils',
+                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+fig
+
+################
+######2.7#######
+################
+
+ggplot(olive, aes(x = linoleic, y = eicosenoic)) +
+  geom_point() + 
+  geom_density_2d()
+
+#############
+#### 1.1 ####
+#############
+
+set.seed(1)
+data <- read_xlsx("baseball-2016.xlsx")
+
+#############
+#### 1.2 ####
+#############
+
+baseball_numeric <- scale(data[,sapply(data, function(x) { is.numeric(x) })])
+
+d <- dist(x = baseball_numeric,
+          method = "minkowski", p = 2)
+
+res <- isoMDS(d, k = 2)
+
+coords <- res$points
+
+coordsMDS <- as.data.frame(coords)
+coordsMDS$Team <- data$Team
+coordsMDS$League <- data$League
+
+plot_ly(coordsMDS, x = ~V1, y = ~V2, type = "scatter", mode = "markers", hovertext = ~Team, color = ~League, colors = c("#377eb8", "#ef553b"))
+
+#############
+#### 1.3 ####
+#############
+
+sh <- Shepard(d, coords)
+
+delta <- as.numeric(d)
+D <- as.numeric(dist(coords))
+
+index <- matrix(1:nrow(coords), nrow = nrow(coords), ncol = nrow(coords))
+index1 <- as.numeric(index[lower.tri(index)])
+
+index <- matrix(1:nrow(coords), nrow = nrow(coords), ncol = nrow(coords), byrow = TRUE)
+index2 <- as.numeric(index[lower.tri(index)])
+
+plot_ly()%>%
+  add_markers(x = ~delta, y = ~D, hoverinfo = 'text',
+              text = ~paste('Team 1: ', data$Team[index1],
+                            '<br> Team 2: ', data$Team[index2])) %>%
+  add_lines(x = ~sh$x, y = ~sh$yf)
+
+#############
+#### 1.4 ####
+#############
+
+data_scatter <- data.frame(coordsMDS$V2, baseball_numeric)
+
+data$V2 <- coordsMDS$V2
+
+plot_ly(data, x = ~V2, y = ~HR.per.game, type = "scatter", mode = "markers", hovertext = ~Team, color = ~League, colors = c("#377eb8", "#ef553b"))
+
+plot_ly(data, x = ~V2, y = ~`3B`, type = "scatter", mode = "markers", hovertext = ~Team, color = ~League, colors = c("#377eb8", "#ef553b"))
+
+
+
+```
+
+
+## Statement of Contribution
+Simon and Mohamed devised the whole assignment together, the main conceptual ideas and codes outline. Mohamed worked out Assignment 1 (Perception in Visualization), and the report creation using r markdown, Simon worked out Assignment 2 (Multidimensional scaling of a high-dimensional dataset) and carried out all codes and functions..

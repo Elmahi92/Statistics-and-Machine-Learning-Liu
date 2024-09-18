@@ -1,0 +1,625 @@
+---
+title: "732A98 Visualization"
+subtitle: "Laboratory Assignment 3"
+author: "Mohamed Ali & Simon Alsén"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: html_document
+---
+  
+  
+```{r setup, include=FALSE}
+library(ggplot2)
+library(plotly)
+library(plotly)
+library(knitr)
+library(tidyverse)
+library(mapboxapi)
+library(dplyr)
+library(tmap) 
+library(plyr)
+library(interp)
+```
+
+# Assignment 1.Visualization of mosquito’s populations 
+
+### Assignment 1.1
+##### Use MapBox interface in Plotly to create two dot maps (for years 2004 and 2013) that show the distribution of the two types of mosquitos in the world (use color to distinguish between mosquitos).
+
+```{r mapbox, echo=FALSE}
+#import data
+data <- read.csv("aegypti_albopictus.csv")
+#Adding Mapbox Token << using my mapbox account
+mapboxToken <- paste("pk.eyJ1Ijoibm9ndWQiLCJhIjoiY2t0cG1qbGkxMDJuZTJva2dvZ3cxcnpseSJ9._Kyu7Zcuv5iqZPpq7OJWYQ", collapse="")
+#Store the Token in a enviroment veriable
+Sys.setenv("MAPBOX_TOKEN" = mapboxToken)
+```
+
+
+### Year 2013
+```{r mapplot, echo=FALSE, warning=FALSE}
+data_13<-filter(data, YEAR == "2013")
+fig_13 <- data_13 
+fig_13 <- fig_13 %>%
+  plot_ly(
+    lat = ~Y,
+    lon = ~X,
+    color = ~VECTOR,
+    mode = "markers",
+    size = 1,
+    type = 'scattermapbox',
+    hovertext = data_13[,"COUNTRY"]) 
+fig_13 <- fig_13 %>%
+  layout(
+    mapbox = list(
+      style = 'dark'),
+    showlegend = TRUE,
+    title = 'Distribution of the two types of mosquitos in the world Year 2013',
+    hovermode = TRUE) 
+fig_13 <- fig_13 %>%
+  config(mapboxAccessToken = Sys.getenv("MAPBOX_TOKEN"))
+
+fig_13
+```
+
+### Year 2004
+```{r mapplot2, echo=FALSE, warning=FALSE}
+data_04<-filter(data, YEAR == "2004")
+fig_04 <- data_04 
+fig_04 <- fig_04 %>%
+  plot_ly(
+    lat = ~Y,
+    lon = ~X,
+    color = ~VECTOR,
+    mode = "markers",
+    size = 1,
+    type = 'scattermapbox',
+    hovertext = data_04[,"COUNTRY"]) 
+fig_04 <- fig_04 %>%
+  layout(
+    mapbox = list(
+      style = 'dark'),
+    showlegend = TRUE,
+    title = 'Distribution of the two types of mosquitos in the world Year 2004',
+    hovermode = TRUE) 
+fig_04 <- fig_04 %>%
+  config(mapboxAccessToken = Sys.getenv("MAPBOX_TOKEN"))
+
+fig_04
+```
+
+### Analyze which countries and which regions in these countries had high density of each mosquito type and how the situation changed between these time points?
+#### Data shows a dramatic increase on distribution of mesquite type of Aedes aegypti in Brazil when we compare year 2004 to 2013, in addition data from 2013 shows that aedes aegypti is more common in the southern hemisphere, while aedes albopictus is more common in the northern hemisphere.
+USA manage to decrease the number of both species in most of its states, leaving San Francisco with a minor density of both types.Africa overall, managed to eliminate both types when we compare data from 2004 to 2013, however Angola still struggle with Aedes aegypti.
+
+### What perception problems can be found in these plots?
+#### Overplotting in highly populated areas (Brazil in 2013 as example)
+
+### Assignment 1.2
+### Compute Z as the numbers of mosquitos per country detected during all study period.
+
+```{r mapplot3, echo=FALSE}
+#data Manipulation 
+m<-ddply(data, .(COUNTRY_ID,COUNTRY),nrow)
+
+#Question 2
+#plot_geo
+fig<-plot_geo(m) %>%
+  add_trace(
+    z = m$V1, locations = m$COUNTRY_ID
+  )
+fig <- fig %>% colorbar(title = "Mosquitos per Country ")
+fig <- fig %>% layout(
+  title = 'Numbers of Mosquitos per Country Detected During all Study Period'
+)
+
+fig
+```
+
+### Why do you think there is so little information in the map?
+#### Data shows only count of mosquitos per country, no information related to type/species of mosquitos are provided, year, status also could provide a little sense to the data and help to interpretated the visual. in addition the outliers (Taiwan and Brazil) makes it hard to spot any differences between the remaining countries. For example, Mexico appears to have the same color as Canada despite Mexico having 465 times as many musqitos.
+
+### Assignment 1.3
+
+### Create the same kind of maps as in step 2 but use
+#### Equirectangular projection with choropleth color log (z)
+```{r mapplot4, echo=FALSE}
+#Note that The available projections are 'equirectangular', 'mercator', 'orthographic', 'natural earth', 'kavrayskiy7', 'miller', 'robinson', 'eckert4', 'azimuthal equal area', 'azimuthal equidistant', 'conic equal area', 'conic conformal', 'conic equidistant', 'gnomonic', 'stereographic', 'mollweide', 'hammer', 'transverse mercator', 'albers usa', 'winkel tripel', 'aitoff' and 'sinusoidal'.
+
+#Equirectangular projection with choropleth color log (𝑍𝑍)
+
+g <- list(
+  projection = list(
+    type = 'equirectangular'
+  )
+)
+
+fig<-plot_geo(m) %>%
+  add_trace(
+    z = log(m$V1), locations = m$COUNTRY_ID
+  )
+fig <- fig %>% colorbar(title = "Mosquitos per Country ")
+fig <- fig %>% layout(
+  geo = g,
+  title = 'Numbers of Mosquitos per Country Detected During all Study Period'
+)
+
+fig
+```
+
+### Analyze the map from step 3a and make conclusions
+#### The advantage of using a log-scale I think is that the outliers are scaled down, which makes it easier to spot differences between the other countries.
+
+#### Conic equal area projection with choropleth color log (zz)
+```{r mapplot5, echo=FALSE, warning=FALSE, message=FALSE}
+#Conic equal area projection with choropleth color log (zz)
+
+g <- list(
+  projection = list(
+    type = 'conic equal area'
+  )
+)
+
+fig<-plot_geo(m) %>%
+  add_trace(
+    z = log(m$V1), locations = m$COUNTRY_ID
+  )
+fig <- fig %>% colorbar(title = "Mosquitos per Country ")
+fig <- fig %>% layout(
+  geo = g,
+  title = 'Numbers of Mosquitos per Country Detected During all Study Period'
+)
+
+fig
+```
+
+### Compare maps from 3a and 3b and comment which advantages and disadvantages you may see with both types of maps?
+#### Comparing (a) to (b), a shows data in more accurate way and maps the distribution of the mosquitoes across countries more clearly, one of the advantages of (a) is that it preserves directions, however the disadvantage of (a) is that it distorts areas, on the other hand one of the main advantages of (b) is that it causes minimal distortions, according to literatures, Conic equal area projection Distances and scale are true only on both standard parallels with directions being reasonably accurate, while Equirectangular is neither equal area nor conformal. Because of the distortions introduced by this projection.
+
+
+### Assignment 1.4
+#### Create variable X1 by cutting X into 100 piecies (use cut_interval() )
+#### Create variable Y1 by cutting Y into 100 piecies (use cut_interval() )
+#### Compute mean values of X and Y per group (X1,Y1) and the amount of observations N per group (X1,Y1)
+```{r dataclean, echo=FALSE, warning=FALSE, message=FALSE}
+databr<-filter(data, YEAR == "2013" & COUNTRY == "Brazil")
+databr$X1<-cut_interval(databr$X,n=100)
+databr$Y1<-cut_interval(databr$Y,n=100)
+
+databm<- databr %>%
+  group_by(databr$X1,databr$Y1) %>%
+  dplyr::summarise(X_mean = mean(X), Y_mean = mean(Y), N = n())
+```
+
+#### Visualize mean X,Y and N by using MapBox
+```{r mapplot6, echo=FALSE}
+fig_xy <- databm 
+fig_xy <- fig_xy %>%
+  plot_ly(
+    lat = ~Y_mean,
+    lon = ~X_mean,
+    color = ~N,
+    width = 1000,
+    height = 900,
+    mode = "markers",
+    size = 1,
+    type = 'scattermapbox')
+    fig_xy <- fig_xy %>%
+  layout(
+    mapbox = list(
+      style = 'dark',
+      zoom =2.5),
+    showlegend = TRUE,
+    title = 'Regions in Brazil that are most infected by mosquitoes',
+    hovermode = TRUE) 
+    fig_xy <- fig_xy %>%
+  config(mapboxAccessToken = Sys.getenv("MAPBOX_TOKEN"))
+    
+fig_xy
+```
+
+### Identify regions in Brazil that are most infected by mosquitoes. 
+#### PErNAMBUCO region, and over all the Western and South regions
+### Did such discretization help in analyzing the distribution of mosquitoes?
+#### No, if we compare it with the plot from original data set there is no differences in shown data in more clearly which region had the most distribution of mosquitoes.
+
+# Assignment 2.Visualization of income in Swedish households
+
+### Assignment 2.1
+
+```{r plot1, echo=FALSE}
+rds <- readRDS("gadm36_SWE_1_sf.rds")
+
+df <- read.csv("000000KD_20210917-142328.csv")
+
+df_wide <- reshape(df,
+                   timevar = "age",
+                   idvar = c("region"),
+                   direction = "wide")
+
+colnames(df_wide)[2:4] <- c("Young", "Adult", "Senior")
+```
+
+### Assignment 2.2
+
+```{r plot2, echo=FALSE}
+levels(df$age) <- c("Young","Adult","Senior")
+
+fig <- df %>%
+  plot_ly(
+    x = ~age,
+    y = ~X2016,
+    split = ~age,
+    type = 'violin',
+    meanline = list(
+      visible = T
+    )
+  ) %>%
+  layout(xaxis = list(title = "Age group"), yaxis = list(title = "Income"))
+fig
+```
+
+#### The violin plots show the distributions of mean incomes of people aged 18-29 (“Young”), 30-49 (“Adult”), and 50-64 (“Senior”) in Swedish counties. Young people have the lowest mean incomes, while seniors tend to have the highest mean incomes. The variation in mean income appears to be higher among adults and seniors than among young people. In addition The shape of the Young  distribution skinny on each end and wide in the middle indicates the income of Young  are highly concentrated around the median.
+
+
+### Assignment 2.3
+
+```{r plot4, echo=FALSE}
+s <- with(df_wide, interp(Young, Adult, Senior, duplicate = "mean"))
+
+
+plot_ly(x=~s$x, y=~s$y, z=~s$z, type="surface") %>%
+  layout(scene = list(xaxis = list(title = "Young"), 
+                      yaxis = list(title = "Adult"),
+                      zaxis = list(title = "Senior")))
+```
+
+
+#### There is a strong, positive, linear relationship between mean incomes among seniors and mean income among both young and adult. This means that counties where seniors have high mean incomes also tends to have high mean incomes among young and adult.
+Because of the strong, linear relationship between seniors mean incomes and young and adult mean incomes a linear regression model would be suitable to model the relationship between mean incomes among seniors, and mean income among young and adults. However, there is a potential risk for multicollinearity between the independent variables young and adult.
+
+
+### Assignment 2.4
+
+```{r plot5, echo=FALSE, warning=FALSE, message=FALSE}
+df_wide$region <- unlist(lapply(strsplit(as.character(df_wide$region),"  "), function(x) { x[2] }))
+
+df_wide$region[which(df_wide$region == "Västra")] <- "Västra Götaland"
+rds$NAME_1[which(rds$NAME_1 == "Orebro")] <- "Örebro"
+
+rds <- merge(rds, df_wide[], by.x = "NAME_1", by.y = "region")
+
+p_young <- plot_ly() %>% add_sf(data=rds, split=~NAME_1, color=~Young, showlegend=F, alpha=1)
+p_adult <- plot_ly() %>% add_sf(data=rds, split=~NAME_1, color=~Adult, showlegend=F, alpha=1)
+p_maps <- subplot(p_young, p_adult)
+p_maps
+```
+
+#### The two maps are quite similar, although with a few, minor differences. The maps shows that counties that have high mean income among young people also tend to have high mean income among adults.
+The advantage of these two plots is that they make it easier to compare the mean incomes between different counties.
+
+
+### Assignment 2.5
+
+```{r plot6, echo=FALSE}
+p_young <- p_young %>% add_markers(x = 15.577691, y = 58.399103, text = "Linköping",
+                                   marker = list(color = "red"))
+p_young
+```
+
+
+## Appendix
+```{r eval=FALSE}
+library(ggplot2)
+library(plotly)
+library(plotly)
+library(knitr)
+library(tidyverse)
+library(mapboxapi)
+library(dplyr)
+library(tmap) 
+library(plyr)
+
+#import data
+data <- read.csv("aegypti_albopictus.csv")
+#Adding Mapbox Token << using mapbox account
+mapboxToken <- paste("pk.eyJ1Ijoibm9ndWQiLCJhIjoiY2t0cG1qbGkxMDJuZTJva2dvZ3cxcnpseSJ9._Kyu7Zcuv5iqZPpq7OJWYQ", collapse="")
+#Store the Token in a enviroment veriable
+Sys.setenv("MAPBOX_TOKEN" = mapboxToken)
+
+############
+####1.1#####
+############
+data_13<-filter(data, YEAR == "2013")
+fig_13 <- data_13 
+fig_13 <- fig_13 %>%
+  plot_ly(
+    lat = ~Y,
+    lon = ~X,
+    color = ~VECTOR,
+    mode = "markers",
+    width = 1000,
+    height = 900,
+    size = 1,
+    type = 'scattermapbox',
+    hovertext = data_13[,"COUNTRY"]) 
+fig_13 <- fig_13 %>%
+  layout(
+    mapbox = list(
+      style = 'dark',
+      zoom =2.5),
+    showlegend = TRUE,
+    title = 'Distribution of the two types of mosquitos in the world Year 2013',
+    hovermode = TRUE) 
+fig_13 <- fig_13 %>%
+  config(mapboxAccessToken = Sys.getenv("MAPBOX_TOKEN"))
+
+fig_13
+
+###
+
+data_04<-filter(data, YEAR == "2004")
+fig_04 <- data_04 
+fig_04 <- fig_04 %>%
+  plot_ly(
+    lat = ~Y,
+    lon = ~X,
+    color = ~VECTOR,
+    width = 1000,
+    height = 900,
+    mode = "markers",
+    size = 1,
+    type = 'scattermapbox',
+    hovertext = data_04[,"COUNTRY"]) 
+fig_04 <- fig_04 %>%
+  layout(
+    mapbox = list(
+      style = 'dark',
+      zoom =2.5),
+    showlegend = TRUE,
+    title = 'Distribution of the two types of mosquitos in the world Year 2004',
+    hovermode = TRUE) 
+fig_04 <- fig_04 %>%
+  config(mapboxAccessToken = Sys.getenv("MAPBOX_TOKEN"))
+
+fig_04
+
+############
+####1.2#####
+############
+#data clean 
+m<-ddply(data, .(VECTOR,COUNTRY_ID,COUNTRY),nrow)
+
+#Question 2
+#plot_geo
+fig<-plot_geo(m) %>%
+  add_trace(
+    z = m$V1, locations = m$COUNTRY_ID
+  )
+fig <- fig %>% colorbar(title = "Mosquitos per Country ")
+fig <- fig %>% layout(
+  title = 'Numbers of Mosquitos per Country Detected During all Study Period'
+)
+
+fig
+
+############
+####1.3#####
+############
+
+#Note that The available projections are 'equirectangular', 'mercator', 'orthographic', 'natural earth', 'kavrayskiy7', 'miller', 'robinson', 'eckert4', 'azimuthal equal area', 'azimuthal equidistant', 'conic equal area', 'conic conformal', 'conic equidistant', 'gnomonic', 'stereographic', 'mollweide', 'hammer', 'transverse mercator', 'albers usa', 'winkel tripel', 'aitoff' and 'sinusoidal'.
+
+#Equirectangular projection with choropleth color log (𝑍𝑍)
+
+g <- list(
+  projection = list(
+    type = 'equirectangular'
+  ),
+  showland = TRUE,
+  landcolor = toRGB("LightGreen"),
+  showocean = TRUE,
+  oceancolor = toRGB("LightBlue"),
+  showlakes = FALSE,
+  lakecolor = toRGB("Blue"),
+  showrivers = FALSE,
+  rivercolor = toRGB("Blue"),
+  resolution = 50,
+  showland = FALSE,
+  landcolor = toRGB("#e5ecf6")
+)
+
+fig<-plot_geo(m) %>%
+  add_trace(
+    z = log(m$V1), locations = m$COUNTRY_ID
+  )
+fig <- fig %>% colorbar(title = "Mosquitos per Country ")
+fig <- fig %>% layout(
+  geo = g,
+  title = 'Numbers of Mosquitos per Country Detected During all Study Period'
+)
+
+fig
+
+###
+
+#Conic equal area projection with choropleth color log (zz)
+
+g <- list(
+  projection = list(
+    type = 'conic equal area'
+  ),
+  showland = TRUE,
+  landcolor = toRGB("LightGreen"),
+  showocean = TRUE,
+  oceancolor = toRGB("LightBlue"),
+  showlakes = FALSE,
+  lakecolor = toRGB("Blue"),
+  showrivers = FALSE,
+  rivercolor = toRGB("Blue"),
+  resolution = 50,
+  showland = FALSE,
+  landcolor = toRGB("#e5ecf6")
+)
+
+fig<-plot_geo(m) %>%
+  add_trace(
+    z = log(m$V1), locations = m$COUNTRY_ID
+  )
+fig <- fig %>% colorbar(title = "Mosquitos per Country ")
+fig <- fig %>% layout(
+  geo = g,
+  title = 'Numbers of Mosquitos per Country Detected During all Study Period'
+)
+
+fig
+
+#############
+#### 1.4 ####
+#############
+databr$X1<-cut_interval(databr$X,n=100)
+databr$Y1<-cut_interval(databr$Y,n=100)
+
+databm<- databr %>%
+  group_by(databr$X1,databr$Y1) %>%
+  dplyr::summarise(X_mean = mean(X), Y_mean = mean(Y), N = n())
+##
+fig_xy <- databm 
+fig_xy <- fig_xy %>%
+  plot_ly(
+    lat = ~Y_mean,
+    lon = ~X_mean,
+    color = ~N,
+    width = 1000,
+    height = 900,
+    mode = "markers",
+    size = 1,
+    type = 'scattermapbox')
+    fig_xy <- fig_xy %>%
+  layout(
+    mapbox = list(
+      style = 'dark',
+      zoom =2.5),
+    showlegend = TRUE,
+    title = 'Regions in Brazil that are most infected by mosquitoes',
+    hovermode = TRUE) 
+    fig_xy <- fig_xy %>%
+  config(mapboxAccessToken = Sys.getenv("MAPBOX_TOKEN"))
+    
+fig_xy
+
+
+#############
+#### 2.1 ####
+#############
+
+rds <- readRDS("gadm36_SWE_1_sf.rds")
+
+df <- read.csv("000000KD_20210917-142328.csv")
+
+df_wide <- reshape(df,
+                   timevar = "age",
+                   idvar = c("region"),
+                   direction = "wide")
+
+colnames(df_wide)[2:4] <- c("Young", "Adult", "Senior")
+
+#############
+#### 2.2 ####
+#############
+
+fig_young <- df_wide %>%
+  plot_ly(
+    y = ~Young,
+    name = 'Young',
+    type = 'violin',
+    meanline = list(
+      visible = T
+    ),
+    x0 = 'Young'
+  ) 
+
+fig_adult <- df_wide %>%
+  plot_ly(
+    y = ~Adult,
+    name = 'Adult',
+    type = 'violin',
+    meanline = list(
+      visible = T
+    ),
+    x0 = 'Adult'
+  )
+
+fig_senior <- df_wide %>%
+  plot_ly(
+    y = ~Senior,
+    name = 'Senior',
+    type = 'violin',
+    meanline = list(
+      visible = T
+    ),
+    x0 = 'Senior'
+  ) 
+
+violin_plots <- subplot(fig_young, fig_adult, fig_senior, shareY = TRUE) %>%
+  layout(yaxis = list(title = "Income"))
+violin_plots
+
+### Alternatively ###
+
+df[which(df$age == "18-29 years"),"age"] <- "Young"
+df[which(df$age == "30-49 years"),"age"] <- "Adult"
+df[which(df$age == "50-64 years"),"age"] <- "Senior"
+
+fig <- df %>%
+  plot_ly(
+    x = ~age,
+    y = ~X2016,
+    split = ~age,
+    type = 'violin',
+    meanline = list(
+      visible = T
+    )
+  ) %>%
+  layout(xaxis = list(title = "Age group"), yaxis = list(title = "Income"))
+fig
+
+#############
+#### 2.3 ####
+#############
+
+s <- with(df_wide, interp(Young, Adult, Senior, duplicate = "mean"))
+
+
+plot_ly(x=~s$x, y=~s$y, z=~s$z, type="surface") %>%
+  layout(scene = list(xaxis = list(title = "Young"), 
+                      yaxis = list(title = "Adult"),
+                      zaxis = list(title = "Senior")))
+
+#############
+#### 2.4 ####
+#############
+
+df_wide$region <- unlist(lapply(strsplit(df_wide$region, " "), function(x) { x[2] }))
+
+df_wide$region[which(df_wide$region == "Västra")] <- "Västra Götaland"
+rds$NAME_1[which(rds$NAME_1 == "Orebro")] <- "Örebro"
+
+rds <- merge(rds, df_wide[], by.x = "NAME_1", by.y = "region")
+
+p_young <- plot_ly() %>% add_sf(data=rds, split=~NAME_1, color=~Young, showlegend=F, alpha=1)
+p_adult <- plot_ly() %>% add_sf(data=rds, split=~NAME_1, color=~Adult, showlegend=F, alpha=1)
+p_maps <- subplot(p_young, p_adult)
+p_maps
+
+#############
+#### 2.5 ####
+#############
+
+p_young <- p_young %>% add_markers(x = 15.577691, y = 58.399103, text = "Linköping",
+                                   marker = list(color = "red"))
+p_young
+
+```
+
+
+## Statement of Contribution
+Simon and Mohamed devised the whole assignment together, the main conceptual ideas and codes outline. Mohamed worked out Assignment 1 (Visualization of mosquito’s populations), and the report creation using r markdown, Simon worked out Assignment 2 (Visualization of income in Swedish households).
