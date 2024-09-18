@@ -12,10 +12,3 @@ In this repository, you will find solutions and implementations for various labs
 ![Python](https://img.shields.io/badge/Python-blue)
 ![Time Series](https://img.shields.io/badge/Time%20Series-blue)
 
-## Getting Started
-
-To get started with the solutions in this repository, clone the repo and follow the instructions in each lab's README.
-
-```bash
-git clone https://github.com/yourusername/repository-name.git
-cd repository-name
