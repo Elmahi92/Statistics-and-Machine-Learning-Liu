@@ -1,0 +1,588 @@
+---
+title: "732A98 Visualization"
+subtitle: "Laboratory Assignment 4"
+author: "Mohamed Ali & Simon Alsén"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: html_document
+---
+  
+  
+```{r setup, include=FALSE}
+library(ggplot2)
+library(lattice)
+library(plotly)
+library(tidyverse)
+library(amap)
+library(seriation)
+library(scales)
+library(GGally)
+```
+
+# Assignment 1. High-dimensional visualization of economic data 
+
+### Assignment 1.1
+
+
+```{r 1.1, echo=FALSE}
+#import data
+prices.and.earnings <- read.delim("prices-and-earnings.txt", row.names=1)
+price_ernings<- prices.and.earnings[,c(1,2,5,6,7,9,10,16,17,18,19)]
+df<- as.matrix(price_ernings)
+
+#Plot
+dfscaled=scale(df)
+fig<-plot_ly(x=colnames(dfscaled), y=rownames(dfscaled),
+             z=dfscaled, type="heatmap", colors = colorRamp(c("yellow","red")))
+fig
+```
+
+### Comment 
+Comment : it not easy to define clusters among cities and outlines as we can observe data ordered in a way that we can't percive any sense of similarities or dissimilarities on it.
+
+### Assignment 1.3
+
+### Distance matrices by using Euclidian, distance orders computed to optimize Hamiltonian Path Length by using Hierarchical Clustering (HC) as the optimization algorithm.
+
+```{r 1.3, echo=FALSE}
+# eclidean
+dfscaled<- scale(df)
+rowdist<-dist(dfscaled,method="euclidean")
+coldist<-dist(t(dfscaled),method="euclidean")
+
+order1 <- seriate(rowdist, "HC")
+order2 <- seriate(coldist, "HC")
+ord1 <- get_order(order1)
+ord2 <- get_order(order2)
+reordmatr <- dfscaled[rev(ord1), ord2]
+dims = list()
+for (i in 1:ncol(reordmatr)) {
+  dims[[i]] = list(label = colnames(reordmatr)[i],
+                   values = as.formula(paste("~", colnames(reordmatr)[i])))
+}
+fig1 <- plot_ly(
+  x = colnames(reordmatr),
+  y = rownames(reordmatr),
+  z = reordmatr,
+  type = "heatmap",
+  colors = colorRamp(c("yellow", "red"))
+)
+fig1
+```
+
+### Distance matrices as one minus correlation distance orders computed  that optimize Hamiltonian Path Length by using Hierarchical Clustering (HC) as the optimization algorithm.
+
+```{r 1.3.1, echo=FALSE}
+dfscaled <- scale(df)
+rowdist <- Dist(dfscaled, method = "correlation")
+coldist <- Dist(t(dfscaled), method = "correlation")
+order1 <- seriate(rowdist, "HC")
+order2 <- seriate(coldist, "HC")
+ord1 <- get_order(order1)
+ord2 <- get_order(order2)
+reordmatrhc <- dfscaled[rev(ord1), ord2]
+dims = list()
+for (i in 1:ncol(reordmatrhc)) {
+  dims[[i]] = list(label = colnames(reordmatrhc)[i],
+                   values = as.formula(paste("~", colnames(reordmatrhc)[i])))
+}
+fig2 <- plot_ly(
+  x = colnames(reordmatrhc),
+  y = rownames(reordmatrhc),
+  z = reordmatrhc,
+  type = "heatmap",
+  colors = colorRamp(c("yellow", "red"))
+)
+fig2
+```
+
+### Comment 
+The two heatmaps shows comparison between multiple cities in term of different features, the first heat maps in the right of the plot shows the distance matrices computed by using Euclidian distance and the second heatmaps on the left computed as one minus correlation. In both maps we compute orders that optimize Hamiltonian Path Length by using Hierarchical Clustering (HC) as the optimization algorithm.
+For the fist heatmap we can observe one main cluster at the center of the map having (Tokyo, Copenhagen, Luxembourg, Oslo, Geneva and Zurich) as cities with similarities when it comes to economic conditions such as (Women clothing, Clothing index, food costs, wage Gross and Goods and services), also we can see that (Jakarta, Manila, Nairobi, Delhi, Mumbai, Ciro, Bangkok and Mexico City) are more similar when it comes to Hours of work. When it comes to outliers, cities like Caracas and Manila are more outlier in term of Bread kg in min compared to the other cities. Tokyo as well shows a behavior of outlier when it comes to Food costs.
+On the other hand, when we used 1-correlation as computation for the distance matric we found that 
+there are less clusters to be observed, one obvious one, a cluster at the top right of the heatmap where we can observe number of cities with similarities in Working hours and Bread kg in min and Rice kg in min, such as (Caracas, Jakarta, Begot, Bangkok, Mexico City and Ciro) however, the outliers are rarely observed compared to Euclidian method, we can see also Tokyo again in food costs and Caracas in Bread Kg in min asoutliers.
+Over all the both methods optimize the order of the heatmaps made it possible to see different clusters and outliers, however, the Euclidian method seems to be easier when it comes to identifying different clusters and outliers.
+
+```{r 1.3.1.1, echo=FALSE}
+subplot(fig1,fig2)
+```
+### Assignment 1.4
+
+```{r 1.4, echo=FALSE}
+dfscaled <- scale(df)
+rowdist <- Dist(dfscaled, method = "euclidean")
+coldist <- Dist(t(dfscaled), method = "euclidean")
+order3 <- seriate(rowdist, "TSP")
+order4 <- seriate(coldist, "TSP")
+ord1 <- get_order(order3)
+ord2 <- get_order(order4)
+reordmatrtsp <- dfscaled[rev(ord1), ord2]
+dims = list()
+for (i in 1:ncol(reordmatrtsp)) {
+  dims[[i]] = list(label = colnames(reordmatrtsp)[i],
+                   values = as.formula(paste("~", colnames(reordmatrtsp)[i])))
+}
+fig3 <- plot_ly(
+  x = colnames(reordmatrtsp),
+  y = rownames(reordmatrtsp),
+  z = reordmatrtsp,
+  type = "heatmap",
+  colors = colorRamp(c("yellow", "red"))
+)
+fig3
+```
+### Comment 
+The graph below shows two heatmaps the first one computed using HC as permutation that optimizes Hamiltonian Path Length, and the sound one uses the Traveling Salesman Problem (TSP) as solver.
+We can observe that the TSP solver optimize the permutation in way that the clusters are more visible, we can see a cluster at the upper right of the heatmap shows similarities between cities like Caracas, Stockholm, Luxembourg, Copenhagen , Oslo, Zurich and Tokyo) in Different economic conditions, such as Vacation Days, Women clothing, Wage Gross, Goods and services and Food costs), we can also easily identify outliers such as Caracas and Manila in Bread kg in min. also we can see cluster like Seoul, Bangkok, Mexico City which they have similarities when it comes to Hours of work.
+Over all TSP as method seems to give more indication about clusters and identifying the outliers compared to HC.
+
+
+```{r 1.4.1.1, echo=FALSE}
+subplot(fig1,fig3)
+```
+### Compare also objective function values such as Hamiltonian Path length and Gradient measure achieved by row permutations of TSP and HC solvers
+
+```{r 1.4.1, echo=FALSE,message = FALSE,warning = FALSE}
+cbind(rbind("TSP" = criterion(rowdist, order = ord1, method = "Path_length"),
+            "HC" = criterion(rowdist, order = get_order(seriate(rowdist, "HC")), method = "Path_length")),
+      rbind("TSP" = criterion(rowdist, order = ord1, method = "Gradient_raw"),
+            "HC" = criterion(rowdist, order = get_order(seriate(rowdist, "HC")), method = "Gradient_raw")))
+```
+
+### Comment 
+The TSP solver minimizes the Hamiltonian path length and maximizes the gradient measure, which mean that the TPS solver is the better seriation method in this case.
+
+
+### Assignment 1.5
+
+
+```{r 1.5, echo=FALSE}
+dfscaled<- scale(df)
+
+dims0=list()
+for( i in 1:ncol(dfscaled)){
+  dims0[[i]]=list( label=colnames(dfscaled)[i],
+                   values=as.formula(paste("~",colnames(dfscaled)[i])))
+}
+
+fig <- as.data.frame(dfscaled) %>%
+  plot_ly(type = 'parcoords',
+          dimensions = dims0
+  )
+
+fig
+#brushing clusters by  Good.and.Services.Index
+obj<- ggparcoord(dfscaled, columns=1:11, scale="uniminmax", groupColumn = 10)
+
+ggplotly(obj)
+```
+
+### Comment
+
+#### Which variables are important to define these clusters and what values of these variables are specific to each cluster
+Good and services index, Women clothing and food costs, all variables are close in the value of 1.5 to 2.5.
+#### Can these clusters be interpreted? Find the most prominent outliers and interpret it.
+Cluster are difficult to interpreted, however the outliers, which are clusters having the value of 2.5 in the good and services index
+
+### Assignment 1.6
+
+```{r 1.6, echo=FALSE,message = FALSE,warning = FALSE}
+#radar chart diagram with juxtaposed radars
+reordmatr<- as.data.frame(reordmatr)
+reordmatr_ <- subset(reordmatr,Good.and.Services.Index>=1.0)
+Ps=list()
+nPlot=9
+
+reordmatr_ %>%
+  add_rownames( var = "group" ) %>%
+  mutate_each(funs(rescale), -group) -> reordmatr__radar
+
+for (i in 1:nPlot){
+  Ps[[i]] <- htmltools::tags$div(
+    plot_ly(type = 'scatterpolar',
+            r=as.numeric(reordmatr__radar[i,-1]),
+            theta= colnames(reordmatr__radar)[-1],
+            fill="toself")%>%
+      layout(title=reordmatr__radar$group[i]), style="width: 25%;")
+}
+
+h <-htmltools::tags$div(style = "display: flex; flex-wrap: wrap", Ps)
+
+htmltools::browsable(h)
+```
+
+### Assignment 1.7
+
+#### Which of the tools you have used in this assignment?
+radar charts
+#### From which perspective
+simplicity, in which the data differences are clear and easy to interpret ate.
+
+
+### Assignment 2.1
+```{r 2_1_a, echo=FALSE}
+adult <- read.csv("adult.csv", header = FALSE)
+colnames(adult) <- c("age", "workclass", "fnlwgt", "education", "education_num",
+                     "marital_status", "occupation", "relationship", "race",
+                     "sex", "capital_gain", "capital_loss", "hours_per_week",
+                     "native_country", "income_level")
+ggplot(data = adult, aes(x = age, y = hours_per_week, color = income_level)) +
+  geom_point() +
+  labs(x = "Age", y = "Hour per week", color = "Income level")
+```
+
+The plot colored by income level is problematic because many points are overlapping. This makes it hard to spot the actual distribution, relationships, and outlying observations since there is no way of telling if a point represents one observation, or 100 observations.
+
+```{r 2_1_b, echo=FALSE}
+ggplot(data = adult, aes(x = age, y = hours_per_week)) +
+  geom_point() +
+  facet_wrap(.~income_level) +
+  labs(x = "Age", y = "Hour per week")
+```
+
+Overlapping observations is still a problem, especially in the group with incomes <=50K since the group contains more observations. Again, this makes it hard to spot the actual distribution, relationships, and outlying observations. It appears that hours worked per week might decrease a little bit with age in the group with incomes >50K.
+
+### Assignment 2.2
+```{r 2_2_a, echo=FALSE}
+ggplot(data = adult, aes(x = age, color = income_level)) +
+  geom_density(size = 0.8)
+```
+
+The average age of people who make 50K or less is lower than for those with an income above 50K. The distribution of age among people who make more than 50K is approximately normal, while the distribution of age among those who make 50K or less is positively skewed which means that the number of people with low income tend to decrease by age.
+
+```{r 2_2_b, echo=FALSE}
+ggplot(data = adult, aes(x = age, color = income_level)) +
+  geom_density(size = 0.8) +
+  facet_wrap(.~marital_status)
+```
+
+People that have never been married have the lowest average age, while people that are widowed have the highest average age. There is little difference in the distributions of age depending on income group among people with the marital status divorced, married-AF-spouse, married-civ-spouse, separated and widowed.
+
+Among people with the marital status married-spouse-absent and never-married the average age is lower among those with an income less or equal to 50K than among those with an income higher than 50K.
+
+### Assignment 2.3
+```{r 2_3_a, echo=FALSE}
+adult_filtered <- adult[which(adult$capital_loss != 0),]
+
+plot_ly(adult_filtered, x = ~education_num, y = ~age, z = ~capital_loss,
+        marker = list(size = 3)) %>%
+  add_markers() %>%
+  layout(scene = list(xaxis = list(title = 'Education'),
+                      yaxis = list(title = 'Age'),
+                      zaxis = list(title = 'Capital loss')))
+```
+
+The 3d scatter plot is hard to analyze because of the large number of points, which causes many points to overlap. It can also be hard to keep track of three dimensions at once.
+
+```{r 2_3_b, echo=FALSE}
+ggplot(adult_filtered, aes(x = education_num, y = capital_loss)) +
+  stat_density_2d(geom = "raster", aes(fill = ..density..), contour = FALSE) +
+  facet_wrap(.~cut_number(age, n = 6)) +
+  labs(x = "Education", y = "Capital loss", fill = "Density")
+```
+
+Capital loss appears to increase slightly with the level of education. There seems to be little difference in how capital loss depends on education level between different age groups. People who are between 17 and 29 years old seems to have a higher proportion of people with lower education.
+
+### Assignment 2.4
+```{r 2_4_a, echo=FALSE}
+ggplot(adult_filtered, aes(x = education_num, y = capital_loss)) +
+  geom_point() +
+  facet_wrap(.~cut_number(age, n = 4)) +
+  labs(x = "Education", y = "Capital loss", fill = "Density")
+```
+
+```{r 2_4_b, echo=FALSE}
+ages <- equal.count(adult_filtered$age, number = 4, overlap = 0.1)
+
+class_names <- paste0(levels(ages))
+
+ages <- matrix(unlist(levels(ages)), ncol = 2, byrow = T)
+ages <- data.frame(Lower = ages[,1], Upper = ages[,2], Interval = factor(1:nrow(ages)))
+
+index <- c()
+classes <- c()
+
+for(i in 1:nrow(ages)) {
+  ind <- which(adult_filtered$age >= ages$Lower[i] & adult_filtered$age <= ages$Upper[i])
+  index <- c(index, ind)
+  classes <- c(classes, rep(class_names[i], length(ind)))
+}
+
+adult_classes <- adult_filtered[index,]
+adult_classes$class <- as.factor(classes)
+
+ggplot(adult_classes, aes(x = education_num, y = capital_loss)) +
+  geom_point() +
+  facet_wrap(.~class) +
+  labs(x = "Education", y = "Capital loss", fill = "Density")
+```
+
+The advantage of using shingles is that it smoothes the boundaries, and thereby makes the age groups a little bit less arbitrary. With non-overlapping age intervals, it can be hard to spot relationships between education level and capital loss that depends on age, if these relationships are abruptly cut off. A potential disadvantage of using shingles is that it may increase problems with overplotting.
+
+
+
+
+
+### Appendix
+```{r eval=FALSE}
+library(ggplot2)
+library(lattice)
+library(plotly)
+library(tidyverse)
+library(amap)
+
+###############
+########1.1####
+###############
+prices.and.earnings <- read.delim("prices-and-earnings.txt", row.names=1)
+price_ernings<- prices.and.earnings[,c(1,2,5,6,7,9,10,16,17,18,19)]
+df<- as.matrix(price_ernings)
+
+###############
+########1.2####
+###############
+
+
+fig<-plot_ly(x=colnames(df), y=rownames(df),
+        z=df, type="heatmap", colors = colorRamp(c("yellow","red")))
+fig
+
+
+###############
+########1.3####
+###############
+
+#distance matrices by a) using Euclidian, distance orders computed  that optimize Hamiltonian Path Length by using Hierarchical Clustering (HC) as the optimization algorithm.
+
+dfscaled<- scale(df)
+rowdist<-Dist(dfscaled, method = "euclidean")
+coldist<-Dist(t(dfscaled), method = "euclidean")
+
+order1<-seriate(rowdist, "HC")
+order2<-seriate(coldist, "HC")
+ord1<-get_order(order1)
+ord2<-get_order(order2)
+
+reordmatr<-dfscaled[rev(ord1),ord2]
+
+dims=list()
+for( i in 1:ncol(reordmatr)){
+  dims[[i]]=list( label=colnames(reordmatr)[i],
+                  values=as.formula(paste("~",colnames(reordmatr)[i])))
+}
+
+fig<-plot_ly(x=colnames(reordmatr), y=rownames(reordmatr),
+             z=reordmatr, type="heatmap", colors = colorRamp(c("yellow","red")))
+
+
+fig
+#distance matrices as one minus correlation distance orders computed  that optimize Hamiltonian Path Length by using Hierarchical Clustering (HC) as the optimization algorithm.
+
+dfscaled<- scale(df)
+rowdist<-Dist(dfscaled, method = "correlation")
+coldist<-Dist(t(dfscaled), method = "correlation")
+
+order1<-seriate(rowdist, "HC")
+order2<-seriate(coldist, "HC")
+ord1<-get_order(order1)
+ord2<-get_order(order2)
+
+reordmatrhc<-dfscaled[rev(ord1),ord2]
+
+dims=list()
+for( i in 1:ncol(reordmatrhc)){
+  dims[[i]]=list( label=colnames(reordmatrhc)[i],
+                  values=as.formula(paste("~",colnames(reordmatrhc)[i])))
+}
+
+fig<-plot_ly(x=colnames(reordmatrhc), y=rownames(reordmatrhc),
+             z=reordmatrhc, type="heatmap", colors = colorRamp(c("yellow","red")))
+fig
+
+#################
+#######1.4#######
+#################
+
+dfscaled<- scale(df)
+rowdist<-Dist(dfscaled, method = "euclidean")
+coldist<-Dist(t(dfscaled), method = "euclidean")
+
+order3<-seriate(rowdist, "TSP")
+order4<-seriate(coldist, "TSP")
+ord1<-get_order(order3)
+ord2<-get_order(order4)
+
+reordmatrtsp<-dfscaled[rev(ord1),ord2]
+
+dims=list()
+for( i in 1:ncol(reordmatrtsp)){
+  dims[[i]]=list( label=colnames(reordmatrtsp)[i],
+                  values=as.formula(paste("~",colnames(reordmatrtsp)[i])))
+}
+
+fig<-plot_ly(x=colnames(reordmatrtsp), y=rownames(reordmatrtsp),
+             z=reordmatrtsp, type="heatmap", colors = colorRamp(c("yellow","red")))
+
+
+fig
+
+###Compare also objective function values such as Hamiltonian Path length and Gradient measure achieved by row permutations of TSP and HC solvers
+criterion(reordmatrhc)
+criterion(reordmatrtsp)
+
+
+################
+######1.5#######
+################
+#parallel coordinate plots
+
+dfscaled<- scale(df)
+
+dims0=list()
+for( i in 1:ncol(dfscaled)){
+  dims0[[i]]=list( label=colnames(dfscaled)[i],
+                   values=as.formula(paste("~",colnames(dfscaled)[i])))
+}
+
+fig <- as.data.frame(dfscaled) %>%
+  plot_ly(type = 'parcoords',
+          dimensions = dims0
+  )
+
+fig
+#brushing clusters by  Good.and.Services.Index
+dfscaled<- scale(df)
+
+dims0=list()
+for( i in 1:ncol(dfscaled)){
+  dims0[[i]]=list( label=colnames(dfscaled)[i],
+                   values=as.formula(paste("~",colnames(dfscaled)[i])))
+}
+
+fig <- as.data.frame(dfscaled) %>%
+  plot_ly(type = 'parcoords',
+          line = list(color = ~Good.and.Services.Index),
+          dimensions = dims0
+  )
+
+fig
+
+#################
+#######1.6#######
+#################
+
+#radar chart diagram with juxtaposed radars
+reordmatr<- as.data.frame(reordmatr)
+reordmatr_ <- subset(reordmatr,Good.and.Services.Index>=1.0)
+Ps=list()
+nPlot=9
+
+reordmatr_ %>%
+  add_rownames( var = "group" ) %>%
+  mutate_each(funs(rescale), -group) -> reordmatr__radar
+
+for (i in 1:nPlot){
+  Ps[[i]] <- htmltools::tags$div(
+    plot_ly(type = 'scatterpolar',
+            r=as.numeric(reordmatr__radar[i,-1]),
+            theta= colnames(reordmatr__radar)[-1],
+            fill="toself")%>%
+      layout(title=reordmatr__radar$group[i]), style="width: 25%;")
+}
+
+h <-htmltools::tags$div(style = "display: flex; flex-wrap: wrap", Ps)
+
+htmltools::browsable(h)
+
+
+################
+#######1.6######
+################
+
+#Which of the tools you have used in this assignment?
+#radar charts
+#From which perspective
+#simplicity, in which the data differences are clear and easy to interpret ate.
+
+#### 2.1 ####
+
+adult <- read.csv("adult.csv", header = FALSE)
+
+colnames(adult) <- c("age", "workclass", "fnlwgt", "education", "education_num",
+                     "marital_status", "occupation", "relationship", "race",
+                     "sex", "capital_gain", "capital_loss", "hours_per_week",
+                     "native_country", "income_level")
+
+ggplot(data = adult, aes(x = age, y = hours_per_week, color = income_level)) +
+  geom_point() +
+  labs(x = "Age", y = "Hour per week", color = "Income level")
+
+ggplot(data = adult, aes(x = age, y = hours_per_week)) +
+  geom_point() +
+  facet_wrap(.~income_level) +
+  labs(x = "Age", y = "Hour per week")
+
+#### 2.2 ####
+
+ggplot(data = adult, aes(x = age, color = income_level)) +
+  geom_density(size = 0.8)
+
+ggplot(data = adult, aes(x = age, color = income_level)) +
+  geom_density(size = 0.8) +
+  facet_wrap(.~marital_status)
+
+#### 2.3 ####
+
+adult_filtered <- adult[which(adult$capital_loss != 0),]
+
+plot_ly(adult_filtered, x = ~education_num, y = ~age, z = ~capital_loss,
+        marker = list(size = 3)) %>%
+  add_markers() %>%
+  layout(scene = list(xaxis = list(title = 'Education'),
+                      yaxis = list(title = 'Age'),
+                      zaxis = list(title = 'Capital loss')))
+
+ggplot(adult_filtered, aes(x = education_num, y = capital_loss)) +
+  stat_density_2d(geom = "raster", aes(fill = ..density..), contour = FALSE) +
+  facet_wrap(.~cut_number(age, n = 6)) +
+  labs(x = "Education", y = "Capital loss", fill = "Density")
+
+#### 2.4 ####
+
+# a)
+
+ggplot(adult_filtered, aes(x = education_num, y = capital_loss)) +
+  geom_point() +
+  facet_wrap(.~cut_number(age, n = 4)) +
+  labs(x = "Education", y = "Capital loss", fill = "Density")
+
+# b)
+
+ages <- equal.count(adult_filtered$age, number = 4, overlap = 0.1)
+
+class_names <- paste0(levels(ages))
+
+ages <- matrix(unlist(levels(ages)), ncol = 2, byrow = T)
+ages <- data.frame(Lower = ages[,1], Upper = ages[,2], Interval = factor(1:nrow(ages)))
+
+index <- c()
+classes <- c()
+
+for(i in 1:nrow(ages)) {
+  ind <- which(adult_filtered$age >= ages$Lower[i] & adult_filtered$age <= ages$Upper[i])
+  index <- c(index, ind)
+  classes <- c(classes, rep(class_names[i], length(ind)))
+}
+
+adult_classes <- adult_filtered[index,]
+adult_classes$class <- as.factor(classes)
+
+ggplot(adult_classes, aes(x = education_num, y = capital_loss)) +
+  geom_point() +
+  facet_wrap(.~class) +
+  labs(x = "Education", y = "Capital loss", fill = "Density")
+
+```
+
+
+## Statement of Contribution
+Simon and Mohamed devised the whole assignment together, the main conceptual ideas and codes outline. Mohamed worked out Assignment 1 (High-dimensional visualization of economic data), and the report creation using r markdown, Simon worked out Assignment 2 (Trellis plots for population analysis).
